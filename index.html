@@ -32,8 +32,9 @@
   .card h2{font-family:'Fraunces',serif;font-size:20px;margin:0 0 4px;font-weight:600;display:flex;align-items:baseline;gap:10px;}
   .card h2 .n{font-family:'IBM Plex Mono';font-size:12px;color:#fff;background:var(--ink);width:24px;height:24px;display:grid;place-items:center;border-radius:50%;flex:0 0 auto;transform:translateY(-2px);}
   label{display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 7px;}
-  input[type=text]{width:100%;padding:12px 14px;font-family:'IBM Plex Mono';font-size:13px;background:#fffdf8;border:1.5px solid var(--rule);color:var(--ink);}
-  input[type=text]:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px #0f6b5c22;}
+  input[type=text],select{width:100%;padding:12px 14px;font-family:'IBM Plex Mono';font-size:13px;background:#fffdf8;border:1.5px solid var(--rule);color:var(--ink);}
+  input[type=text]:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px #0f6b5c22;}
+  select:disabled{opacity:.5;}
   .modes{display:flex;margin-top:8px;border:1.5px solid var(--ink);}
   .modes button{flex:1;padding:13px 10px;border:none;background:#fffdf8;cursor:pointer;font-family:'IBM Plex Mono';font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);transition:.15s ease;}
   .modes button + button{border-left:1.5px solid var(--ink);}
@@ -50,11 +51,12 @@
   .gbtn.connected .dot{background:var(--accent);}
   .gstate{font-size:12px;color:var(--ink-soft);margin-top:8px;}
   .gstate b{color:var(--accent-deep);}
+  .divider{display:flex;align-items:center;gap:12px;margin:18px 0 0;color:var(--ink-soft);font-size:11px;letter-spacing:.2em;text-transform:uppercase;}
+  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--rule);}
   .btn{margin-top:20px;width:100%;padding:15px 18px;border:none;cursor:pointer;font-family:'IBM Plex Mono';font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;background:var(--ink);color:var(--paper);transition:.15s ease;}
   .btn:hover:not(:disabled){background:var(--accent-deep);} .btn:disabled{opacity:.4;cursor:not-allowed;}
   .note{margin-top:18px;padding:12px 14px;border-left:4px solid var(--accent);background:#0f6b5c10;font-size:12.5px;color:var(--accent-deep);}
   .note b{color:var(--ink);}
-  .warn{border-left-color:var(--cat3);background:#b5562a12;color:#7d3a1c;}
   #status{margin-top:18px;font-size:13px;min-height:20px;display:flex;align-items:center;gap:10px;}
   .spin{width:14px;height:14px;border:2px solid var(--rule);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;}
   @keyframes sp{to{transform:rotate(360deg);}}
@@ -80,7 +82,6 @@
   .dl{display:inline-block;margin-top:18px;padding:13px 22px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;}
   .dl:hover{background:var(--accent-deep);}
   footer{margin-top:40px;font-size:11px;color:var(--ink-soft);text-align:center;}
-  code{background:#00000010;padding:1px 5px;}
 </style>
 </head>
 <body>
@@ -88,13 +89,13 @@
   <header>
     <p class="eyebrow">n8n &middot; bank statement utility</p>
     <h1>Transaction<br><em>Classifier</em></h1>
-    <p class="sub">Sort transactions into Category 1, 2 or 3. Upload a CSV to get a classified CSV back, or connect your Google account and point it at a Sheet &mdash; it adds a new classified tab using your own permissions.</p>
+    <p class="sub">Sort transactions into Category 1, 2 or 3. Upload a CSV to get one back, or connect Google, pick a spreadsheet and tab, and a new classified tab is written for you.</p>
   </header>
 
   <div class="card">
     <h2><span class="n">1</span> Endpoint</h2>
-    <label for="url">Webhook URL</label>
-    <input type="text" id="url" value="https://n8n.srv1664158.hstgr.cloud/webhook-test/classify-transactions" spellcheck="false" />
+    <label for="url">Classify webhook URL</label>
+    <input type="text" id="url" value="https://n8n.srv1664158.hstgr.cloud/webhook/classify-transactions" spellcheck="false" />
 
     <label>Input</label>
     <div class="modes">
@@ -114,15 +115,23 @@
     <div class="pane" id="paneSheet">
       <label>Step A &mdash; connect Google</label>
       <button class="gbtn" id="gConnect" type="button"><span class="dot"></span> Connect Google account</button>
-      <div class="gstate" id="gState">Not connected. The workflow will act with your permissions only.</div>
+      <div class="gstate" id="gState">Not connected. The workflow acts with your permissions only.</div>
 
-      <label for="sheetUrl">Step B &mdash; Google Sheet link</label>
+      <label for="ssSelect">Step B &mdash; choose a spreadsheet</label>
+      <select id="ssSelect" disabled><option value="">Connect Google first</option></select>
+
+      <label for="tabSelect">Step C &mdash; choose a tab</label>
+      <select id="tabSelect" disabled><option value="">Pick a spreadsheet first</option></select>
+
+      <div class="divider">or</div>
+      <label for="sheetUrl">Paste a sheet link instead</label>
       <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=0" spellcheck="false" />
-      <div class="note" style="margin-top:12px;">Paste the link of the <b>tab</b> you want classified. A new tab <b>"Classified &lt;date&gt;"</b> is added to that spreadsheet. You must have edit access to it.</div>
+
+      <div class="note" style="margin-top:12px;">A new tab <b>"Classified &lt;date&gt;"</b> is added to the chosen spreadsheet. You need edit access to it. Listing your spreadsheets requires the Drive permission, granted at connect.</div>
     </div>
 
     <div class="note">
-      <b>/webhook-test/</b> URL? Click <b>"Listen for test event"</b> in n8n first (catches one request). For repeated use, activate the workflow and switch to <b>/webhook/classify-transactions</b>.
+      For the pick flow, the workflow should be <b>active</b> (this URL uses <b>/webhook/</b>). Test URLs only catch one request at a time, which breaks the connect &rarr; list &rarr; classify sequence.
     </div>
 
     <button class="btn" id="go" disabled>Classify transactions</button>
@@ -136,18 +145,19 @@
     <a class="dl" id="download" download="classified_transactions.csv">&darr; Download classified CSV</a>
   </div>
 
-  <footer>Runs in your browser &middot; your Google token never leaves your device except to your own n8n webhook</footer>
+  <footer>Runs in your browser &middot; your Google token only goes to your own n8n webhooks</footer>
 </div>
 
 <script>
   /* ====== CONFIG: paste your OAuth Web client ID below ====== */
-  const GOOGLE_CLIENT_ID = '895572489046-jod47u58om8gepov3npeq1vftkabifgl.apps.googleusercontent.com';
-  const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/spreadsheets';
+  const GOOGLE_CLIENT_ID = 'YOUR_GOOGLE_OAUTH_CLIENT_ID';
+  const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.metadata.readonly';
   /* ========================================================== */
 
   const $ = id => document.getElementById(id);
   const urlEl=$('url'), fileEl=$('file'), drop=$('drop'), fileName=$('fileName'),
-        sheetUrlEl=$('sheetUrl'), go=$('go'), statusEl=$('status'), results=$('results'),
+        ssSelect=$('ssSelect'), tabSelect=$('tabSelect'), sheetUrlEl=$('sheetUrl'),
+        go=$('go'), statusEl=$('status'), results=$('results'),
         summary=$('summary'), table=$('table'), download=$('download'),
         mFile=$('mFile'), mSheet=$('mSheet'), paneFile=$('paneFile'), paneSheet=$('paneSheet'),
         gConnect=$('gConnect'), gState=$('gState');
@@ -155,9 +165,11 @@
   let mode='file', chosen=null, accessToken=null, tokenClient=null;
 
   function status(html, cls){ statusEl.className=cls||''; statusEl.innerHTML=html; }
+  function siblingUrl(path){ const u=urlEl.value.trim(); const i=u.lastIndexOf('/'); return i>=0 ? u.slice(0,i+1)+path : u; }
+
   function refreshButton(){
     if(mode==='file') go.disabled = !chosen;
-    else go.disabled = !(sheetUrlEl.value.trim() && accessToken);
+    else go.disabled = !(accessToken && (sheetUrlEl.value.trim() || (ssSelect.value && tabSelect.value)));
   }
   function setMode(m){
     mode=m;
@@ -170,40 +182,66 @@
   mFile.onclick=()=>setMode('file');
   mSheet.onclick=()=>setMode('sheet');
   sheetUrlEl.addEventListener('input', refreshButton);
+  ssSelect.addEventListener('change', () => { if(ssSelect.value) loadTabs(ssSelect.value); else resetTabs(); refreshButton(); });
+  tabSelect.addEventListener('change', refreshButton);
 
   /* ---- Google sign-in (token flow) ---- */
   function initToken(){
     if(tokenClient) return true;
     if(!window.google || !google.accounts || !google.accounts.oauth2){
-      status('<div class="err">Google sign-in library not loaded yet. Wait a moment and retry. (Also: this page must be served from an http(s) origin registered in your OAuth client, not opened as a local file.)</div>');
+      status('<div class="err">Google library not loaded. Wait a moment and retry. (This page must be served from an http(s) origin registered in your OAuth client, not opened as a local file.)</div>');
       return false;
     }
     tokenClient = google.accounts.oauth2.initTokenClient({
-      client_id: GOOGLE_CLIENT_ID,
-      scope: GOOGLE_SCOPE,
+      client_id: GOOGLE_CLIENT_ID, scope: GOOGLE_SCOPE,
       callback: (resp) => {
         if(resp && resp.access_token){
           accessToken = resp.access_token;
           gConnect.classList.add('connected');
-          gConnect.querySelector('.dot');
           gConnect.childNodes[1].nodeValue = ' Google connected';
-          gState.innerHTML = 'Connected. <b>Edit access to Sheets granted</b> for this session.';
+          gState.innerHTML = 'Connected. <b>Sheets + Drive access granted</b> for this session.';
+          loadSpreadsheets();
           refreshButton();
-        } else {
-          gState.textContent = 'Sign-in did not return a token. Try again.';
-        }
+        } else { gState.textContent = 'Sign-in did not return a token. Try again.'; }
       }
     });
     return true;
   }
   gConnect.onclick = () => {
-    if(GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_OAUTH_CLIENT_ID'){
-      status('<div class="err">Set GOOGLE_CLIENT_ID in this file first (your OAuth Web client ID).</div>');
-      return;
-    }
+    if(GOOGLE_CLIENT_ID === 'YOUR_GOOGLE_OAUTH_CLIENT_ID'){ status('<div class="err">Set GOOGLE_CLIENT_ID in this file first (your OAuth Web client ID).</div>'); return; }
     if(!initToken()) return;
     tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' });
   };
+
+  function resetTabs(){ tabSelect.innerHTML='<option value="">Pick a spreadsheet first</option>'; tabSelect.disabled=true; }
+
+  async function loadSpreadsheets(){
+    ssSelect.disabled=true; ssSelect.innerHTML='<option value="">Loading your spreadsheets…</option>'; resetTabs();
+    try{
+      const res = await fetch(siblingUrl('list-spreadsheets'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ accessToken }) });
+      if(!res.ok){ await fail(res, 'list-spreadsheets'); ssSelect.innerHTML='<option value="">Could not load — paste a link below</option>'; return; }
+      const data = await res.json();
+      const items = (data && data.spreadsheets) || [];
+      if(!items.length){ ssSelect.innerHTML='<option value="">No spreadsheets found</option>'; return; }
+      ssSelect.innerHTML = '<option value="">— select —</option>' + items.map(s => '<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>').join('');
+      ssSelect.disabled=false;
+      status('');
+    }catch(err){ status('<div class="err">Could not reach /list-spreadsheets.\n'+err.message+'</div>'); }
+  }
+
+  async function loadTabs(spreadsheetId){
+    tabSelect.disabled=true; tabSelect.innerHTML='<option value="">Loading tabs…</option>';
+    try{
+      const res = await fetch(siblingUrl('list-tabs'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ spreadsheetId, accessToken }) });
+      if(!res.ok){ await fail(res, 'list-tabs'); tabSelect.innerHTML='<option value="">Could not load tabs</option>'; return; }
+      const data = await res.json();
+      const tabs = (data && data.tabs) || [];
+      if(!tabs.length){ tabSelect.innerHTML='<option value="">No tabs found</option>'; return; }
+      tabSelect.innerHTML = tabs.map(t => '<option value="'+esc(String(t.gid))+'">'+esc(t.title)+'</option>').join('');
+      tabSelect.disabled=false;
+      status('');
+    }catch(err){ status('<div class="err">Could not reach /list-tabs.\n'+err.message+'</div>'); }
+  }
 
   /* ---- file picker ---- */
   function setFile(f){ if(!f) return; chosen=f; fileName.textContent=f.name+'  ('+(f.size/1024).toFixed(1)+' KB)'; refreshButton(); }
@@ -213,12 +251,19 @@
   ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
   drop.addEventListener('drop',e=>setFile(e.dataTransfer.files[0]));
 
-  function explain404(){ return 'The webhook is not listening. For a /webhook-test/ URL, click "Listen for test event" in n8n and resend (one request only). If the workflow is not active, the production URL 404s too.'; }
-  async function fail(res){
+  function explain404(p){ return 'No webhook listening at /'+p+'. Activate the workflow (production URL) — test URLs only catch one request, which does not suit this multi-step flow.'; }
+  async function fail(res, p){
     let extra=''; try{ extra=await res.text(); }catch(_){}
-    if(res.status===404) extra=explain404();
-    if(res.status===401||res.status===403) extra='Google rejected the token (401/403). Either the sign-in scope is wrong, the token expired (reconnect), or your account cannot edit that sheet.\n\n'+extra;
-    status('<div class="err">Request failed &mdash; HTTP '+res.status+'\n'+esc(extra)+'</div>'); go.disabled=false;
+    if(res.status===404) extra=explain404(p||'');
+    if(res.status===401||res.status===403) extra='Google rejected the token (401/403). The scope may be missing (reconnect), the token expired, or you lack access to that sheet.\n\n'+extra;
+    status('<div class="err">Request to /'+(p||'')+' failed — HTTP '+res.status+'\n'+esc(extra)+'</div>');
+  }
+
+  function chosenSheetUrl(){
+    const manual = sheetUrlEl.value.trim();
+    if(manual) return manual;
+    if(ssSelect.value && tabSelect.value) return 'https://docs.google.com/spreadsheets/d/'+ssSelect.value+'/edit#gid='+tabSelect.value;
+    return '';
   }
 
   go.onclick = async () => {
@@ -227,21 +272,21 @@
     try{
       if(mode==='file'){
         if(!chosen){ go.disabled=false; return; }
-        status('<span class="spin"></span> Sending file&hellip; the AI runs over your rows, this can take a little while.');
+        status('<span class="spin"></span> Sending file… this can take a little while.');
         const fd=new FormData(); fd.append('file', chosen, chosen.name);
         const res=await fetch(url,{method:'POST',body:fd});
-        if(!res.ok){ await fail(res); return; }
+        if(!res.ok){ await fail(res,'classify-transactions'); go.disabled=false; return; }
         const text=await (await res.blob()).text();
         download.href=URL.createObjectURL(new Blob([text],{type:'text/csv'}));
         render(text);
-        status('&check; Done &mdash; classified '+Math.max(0,parse(text).rows.length)+' transactions.');
+        status('&check; Done — classified '+Math.max(0,parse(text).rows.length)+' transactions.');
         results.style.display='block';
       } else {
-        const sheetUrl=sheetUrlEl.value.trim();
+        const sheetUrl=chosenSheetUrl();
         if(!sheetUrl||!accessToken){ go.disabled=false; return; }
-        status('<span class="spin"></span> Reading, classifying and writing a new tab&hellip;');
+        status('<span class="spin"></span> Reading, classifying and writing a new tab…');
         const res=await fetch(url,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sheetUrl, accessToken})});
-        if(!res.ok){ await fail(res); return; }
+        if(!res.ok){ await fail(res,'classify-transactions'); go.disabled=false; return; }
         const msg=(await res.text())||'Done. A new classified tab was added.';
         status('');
         document.querySelector('.tablewrap').style.display='none';
@@ -250,12 +295,12 @@
         results.style.display='block';
       }
     }catch(err){
-      status('<div class="err">Could not reach the webhook.\n'+err.message+'\n\nLikely the workflow is not listening yet, the URL is wrong, or the instance blocked the request (CORS).</div>');
+      status('<div class="err">Could not reach the webhook.\n'+err.message+'\n\nLikely the workflow is not active, the URL is wrong, or the instance blocked the request (CORS).</div>');
     }
     go.disabled=false;
   };
 
-  /* ---- tiny CSV parser + table render (file mode) ---- */
+  /* ---- CSV parse + render (file mode) ---- */
   function parse(text){
     const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.length);
     const pl=line=>{const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];
