@@ -7,174 +7,173 @@
 <script src="https://accounts.google.com/gsi/client" async defer></script>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   :root{
-    --paper:#f4efe4; --paper-2:#ece4d3; --ink:#1c1a17; --ink-soft:#5a5448;
-    --rule:#d8cdb6; --accent:#0f6b5c; --accent-deep:#0a4d42;
-    --cat1:#6b6357; --cat2:#0f6b5c; --cat3:#b5562a; --danger:#9c2b1f;
-    --shadow:0 1px 0 #fff8 inset, 0 18px 40px -22px #00000055;
+    --bg:#ffffff; --fg:#15171a; --muted:#8a9099; --line:#ececef;
+    --accent:#15171a; --soft:#f6f7f8;
+    --c1:#9aa0a6; --c2:#1f9d76; --c3:#d08a3e; --danger:#c4453c;
+    --radius:10px;
   }
-  *{box-sizing:border-box;} html,body{margin:0;}
-  body{font-family:'IBM Plex Mono',ui-monospace,monospace;color:var(--ink);
-    background:radial-gradient(120% 80% at 50% -10%, #fbf7ee 0%, var(--paper) 55%, var(--paper-2) 100%) fixed;
-    min-height:100vh;padding:48px 20px 80px;line-height:1.5;}
-  body::before{content:"";position:fixed;inset:0;pointer-events:none;z-index:0;
-    background:repeating-linear-gradient(to bottom, transparent 0 31px, #00000008 31px 32px);
-    mask:linear-gradient(to bottom, transparent, #000 8%, #000 92%, transparent);}
-  .wrap{position:relative;z-index:1;max-width:880px;margin:0 auto;}
-  header{margin-bottom:34px;border-bottom:2px solid var(--ink);padding-bottom:18px;}
-  .eyebrow{font-size:11px;letter-spacing:.32em;text-transform:uppercase;color:var(--accent-deep);font-weight:600;margin:0 0 10px;}
-  h1{font-family:'Fraunces',serif;font-weight:600;font-size:clamp(34px,6vw,58px);line-height:.98;margin:0;letter-spacing:-.01em;}
-  h1 em{font-style:italic;color:var(--accent);}
-  .sub{margin:14px 0 0;max-width:60ch;color:var(--ink-soft);font-size:13.5px;}
-  .card{background:linear-gradient(180deg,#fffdf8,#f6f0e3);border:1.5px solid var(--ink);box-shadow:var(--shadow);padding:26px;margin-top:26px;}
-  .card h2{font-family:'Fraunces',serif;font-size:20px;margin:0 0 4px;font-weight:600;display:flex;align-items:baseline;gap:10px;}
-  .card h2 .n{font-family:'IBM Plex Mono';font-size:12px;color:#fff;background:var(--ink);width:24px;height:24px;display:grid;place-items:center;border-radius:50%;flex:0 0 auto;transform:translateY(-2px);}
-  label{display:block;font-size:11px;letter-spacing:.18em;text-transform:uppercase;color:var(--ink-soft);margin:16px 0 7px;}
-  input[type=text],select{width:100%;padding:12px 14px;font-family:'IBM Plex Mono';font-size:13px;background:#fffdf8;border:1.5px solid var(--rule);color:var(--ink);}
-  input[type=text]:focus,select:focus{outline:none;border-color:var(--accent);box-shadow:0 0 0 3px #0f6b5c22;}
-  select:disabled{opacity:.5;}
-  .modes{display:flex;margin-top:8px;border:1.5px solid var(--ink);}
-  .modes button{flex:1;padding:13px 10px;border:none;background:#fffdf8;cursor:pointer;font-family:'IBM Plex Mono';font-weight:600;font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-soft);transition:.15s ease;}
-  .modes button + button{border-left:1.5px solid var(--ink);}
-  .modes button.active{background:var(--ink);color:var(--paper);}
+  *{box-sizing:border-box;}
+  html,body{margin:0;}
+  body{font-family:'Inter',system-ui,sans-serif;color:var(--fg);background:var(--bg);
+    -webkit-font-smoothing:antialiased;font-size:15px;line-height:1.55;
+    padding:64px 22px 100px;}
+  .wrap{max-width:600px;margin:0 auto;}
+  h1{font-size:24px;font-weight:600;letter-spacing:-.02em;margin:0 0 6px;}
+  .sub{color:var(--muted);font-size:14px;margin:0 0 36px;}
+
+  .seg{display:flex;gap:6px;margin-bottom:24px;}
+  .seg button{flex:1;padding:10px;border:1px solid var(--line);background:var(--bg);border-radius:var(--radius);
+    cursor:pointer;font:inherit;font-size:13px;font-weight:500;color:var(--muted);transition:.12s;}
+  .seg button:hover{border-color:#d7d9dd;}
+  .seg button.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
   .pane{display:none;} .pane.show{display:block;}
-  .drop{margin-top:8px;border:2px dashed var(--rule);background:#fffdf8aa;padding:30px 20px;text-align:center;cursor:pointer;transition:.15s ease;}
-  .drop:hover,.drop.over{border-color:var(--accent);background:#0f6b5c0d;}
-  .drop strong{font-family:'Fraunces',serif;font-size:18px;font-weight:600;}
-  .drop .hint{font-size:12px;color:var(--ink-soft);margin-top:6px;}
-  .drop .file{margin-top:12px;font-size:13px;color:var(--accent-deep);font-weight:600;word-break:break-all;}
-  .gbtn{margin-top:8px;display:inline-flex;align-items:center;gap:10px;padding:11px 16px;border:1.5px solid var(--ink);background:#fffdf8;cursor:pointer;font-family:'IBM Plex Mono';font-weight:600;font-size:12px;color:var(--ink);}
-  .gbtn:hover{background:#0f6b5c0d;}
-  .gbtn .dot{width:9px;height:9px;border-radius:50%;background:var(--danger);}
-  .gbtn.connected .dot{background:var(--accent);}
-  .gstate{font-size:12px;color:var(--ink-soft);margin-top:8px;}
-  .gstate b{color:var(--accent-deep);}
-  .divider{display:flex;align-items:center;gap:12px;margin:22px 0 0;color:var(--ink-soft);font-size:11px;letter-spacing:.2em;text-transform:uppercase;}
-  .divider::before,.divider::after{content:"";flex:1;height:1px;background:var(--rule);}
-  .btn{margin-top:14px;width:100%;padding:15px 18px;border:none;cursor:pointer;font-family:'IBM Plex Mono';font-weight:600;font-size:13px;letter-spacing:.14em;text-transform:uppercase;background:var(--ink);color:var(--paper);transition:.15s ease;}
-  .btn:hover:not(:disabled){background:var(--accent-deep);} .btn:disabled{opacity:.4;cursor:not-allowed;}
-  .btn.alt{background:#fffdf8;color:var(--ink);border:1.5px solid var(--ink);}
-  .btn.alt:hover:not(:disabled){background:#0f6b5c0d;color:var(--ink);}
-  .note{margin-top:18px;padding:12px 14px;border-left:4px solid var(--accent);background:#0f6b5c10;font-size:12.5px;color:var(--accent-deep);}
-  .note b{color:var(--ink);}
-  #status{margin-top:18px;font-size:13px;min-height:20px;display:flex;align-items:center;gap:10px;}
-  .spin{width:14px;height:14px;border:2px solid var(--rule);border-top-color:var(--accent);border-radius:50%;animation:sp 1s linear infinite;}
+  label{display:block;font-size:12px;font-weight:500;color:var(--muted);margin:18px 0 7px;}
+  input[type=text],select{width:100%;padding:11px 13px;font:inherit;font-size:14px;border:1px solid var(--line);
+    border-radius:var(--radius);background:var(--bg);color:var(--fg);}
+  input[type=text]:focus,select:focus{outline:none;border-color:var(--accent);}
+  select:disabled{color:var(--muted);background:var(--soft);}
+
+  .drop{border:1px dashed #d7d9dd;border-radius:var(--radius);padding:34px 18px;text-align:center;cursor:pointer;
+    background:var(--soft);transition:.12s;}
+  .drop:hover,.drop.over{border-color:var(--accent);background:#f0f1f2;}
+  .drop strong{font-weight:600;font-size:15px;display:block;}
+  .drop span{font-size:13px;color:var(--muted);}
+  .drop .file{margin-top:10px;font-size:13px;color:var(--fg);font-weight:500;word-break:break-all;}
+
+  .gbtn{display:inline-flex;align-items:center;gap:9px;padding:10px 15px;border:1px solid var(--line);
+    border-radius:var(--radius);background:var(--bg);cursor:pointer;font:inherit;font-size:13px;font-weight:500;}
+  .gbtn:hover{border-color:#d7d9dd;}
+  .gbtn .dot{width:8px;height:8px;border-radius:50%;background:var(--danger);}
+  .gbtn.connected .dot{background:var(--c2);}
+  .gstate{font-size:13px;color:var(--muted);margin-top:8px;}
+
+  .btn{margin-top:16px;width:100%;padding:13px;border:none;border-radius:var(--radius);cursor:pointer;
+    font:inherit;font-size:14px;font-weight:600;background:var(--accent);color:#fff;transition:.12s;}
+  .btn:hover:not(:disabled){opacity:.88;} .btn:disabled{opacity:.32;cursor:not-allowed;}
+  .btn.alt{background:var(--bg);color:var(--fg);border:1px solid var(--line);font-weight:500;}
+  .btn.alt:hover:not(:disabled){border-color:#d7d9dd;opacity:1;}
+
+  .or{display:flex;align-items:center;gap:12px;margin:24px 0 0;color:var(--muted);font-size:12px;}
+  .or::before,.or::after{content:"";flex:1;height:1px;background:var(--line);}
+
+  .adv{margin-top:30px;border-top:1px solid var(--line);padding-top:14px;}
+  .adv-toggle{background:none;border:none;padding:0;cursor:pointer;color:var(--muted);font:inherit;font-size:12.5px;
+    display:inline-flex;align-items:center;gap:6px;}
+  .adv-toggle:hover{color:var(--fg);}
+  .adv-toggle .car{transition:.15s;display:inline-block;}
+  .adv.open .adv-toggle .car{transform:rotate(90deg);}
+  .adv-body{display:none;margin-top:6px;} .adv.open .adv-body{display:block;}
+
+  #status{margin-top:20px;font-size:13.5px;}
+  .row{display:flex;align-items:center;gap:9px;color:var(--muted);}
+  .spin{width:13px;height:13px;border:2px solid var(--line);border-top-color:var(--accent);border-radius:50%;
+    animation:sp .8s linear infinite;flex:0 0 auto;}
   @keyframes sp{to{transform:rotate(360deg);}}
-  .err{color:var(--danger);border-left:4px solid var(--danger);background:#9c2b1f10;padding:12px 14px;font-size:12.5px;white-space:pre-wrap;}
-  .ok{color:var(--accent-deep);border-left:4px solid var(--accent);background:#0f6b5c12;padding:14px 16px;font-size:13.5px;}
-  .ok strong{font-family:'Fraunces',serif;}
-  .results{display:none;}
-  .summary{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 18px;}
-  .stat{flex:1 1 150px;border:1.5px solid var(--ink);padding:14px 16px;background:#fffdf8;}
-  .stat .lab{font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-soft);}
-  .stat .val{font-family:'Fraunces',serif;font-size:30px;font-weight:600;line-height:1;margin-top:6px;}
-  .stat.c1{border-color:var(--cat1);} .stat.c1 .val{color:var(--cat1);}
-  .stat.c2{border-color:var(--cat2);} .stat.c2 .val{color:var(--cat2);}
-  .stat.c3{border-color:var(--cat3);} .stat.c3 .val{color:var(--cat3);}
-  .tablewrap{border:1.5px solid var(--ink);overflow:auto;max-height:440px;}
-  table{border-collapse:collapse;width:100%;font-size:12px;}
-  th,td{padding:8px 11px;text-align:left;border-bottom:1px solid var(--rule);white-space:nowrap;}
-  th{position:sticky;top:0;background:var(--ink);color:var(--paper);font-weight:600;letter-spacing:.05em;font-size:11px;text-transform:uppercase;z-index:2;}
-  tr:nth-child(even) td{background:#0000000a;}
-  .chip{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:600;color:#fff;}
-  .chip.c1{background:var(--cat1);} .chip.c2{background:var(--cat2);} .chip.c3{background:var(--cat3);}
-  td.amt{font-variant-numeric:tabular-nums;text-align:right;}
-  .dl{display:inline-block;margin-top:18px;padding:13px 22px;background:var(--accent);color:#fff;text-decoration:none;font-weight:600;font-size:12px;letter-spacing:.12em;text-transform:uppercase;}
-  .dl:hover{background:var(--accent-deep);}
-  footer{margin-top:40px;font-size:11px;color:var(--ink-soft);text-align:center;}
+  .err{border:1px solid #f0d4d2;background:#fdf5f4;color:var(--danger);padding:13px 15px;border-radius:var(--radius);
+    font-size:13px;white-space:pre-wrap;}
+  .ok{border:1px solid #cdece1;background:#f3fbf8;color:#157a5b;padding:14px 16px;border-radius:var(--radius);font-size:14px;}
+  .ok a{color:#157a5b;font-weight:600;}
+
+  .results{display:none;margin-top:30px;border-top:1px solid var(--line);padding-top:26px;}
+  .counts{display:flex;gap:20px;margin-bottom:20px;}
+  .count .n{font-size:26px;font-weight:600;line-height:1;}
+  .count .l{font-size:11.5px;color:var(--muted);margin-top:4px;}
+  .count.c1 .n{color:var(--c1);} .count.c2 .n{color:var(--c2);} .count.c3 .n{color:var(--c3);}
+  .tablewrap{border:1px solid var(--line);border-radius:var(--radius);overflow:auto;max-height:400px;}
+  table{border-collapse:collapse;width:100%;font-size:12.5px;}
+  th,td{padding:8px 12px;text-align:left;border-bottom:1px solid var(--line);white-space:nowrap;}
+  th{position:sticky;top:0;background:var(--soft);font-weight:600;color:var(--muted);font-size:11px;
+    text-transform:uppercase;letter-spacing:.04em;}
+  tr:last-child td{border-bottom:none;}
+  .chip{display:inline-flex;align-items:center;gap:6px;font-weight:500;}
+  .chip::before{content:"";width:7px;height:7px;border-radius:50%;}
+  .chip.c1::before{background:var(--c1);} .chip.c2::before{background:var(--c2);} .chip.c3::before{background:var(--c3);}
+  td.amt{text-align:right;font-variant-numeric:tabular-nums;}
+  .dl{display:inline-block;margin-top:18px;padding:11px 18px;background:var(--accent);color:#fff;text-decoration:none;
+    border-radius:var(--radius);font-size:13px;font-weight:600;}
+  footer{margin-top:40px;font-size:12px;color:var(--muted);}
 </style>
 </head>
 <body>
 <div class="wrap">
-  <header>
-    <p class="eyebrow">n8n &middot; bank statement utility</p>
-    <h1>Transaction<br><em>Classifier</em></h1>
-    <p class="sub">Sort transactions into Category 1, 2 or 3. Upload a CSV to get one back, or connect Google, pick a spreadsheet and tab, and a new classified tab is written for you.</p>
-  </header>
+  <h1>Transaction Classifier</h1>
+  <p class="sub">Sort bank transactions into 3 categories. Upload a CSV, or connect Google and pick a sheet.</p>
 
-  <div class="card">
-    <h2><span class="n">1</span> Endpoint</h2>
-    <label for="url">Classify webhook URL</label>
-    <input type="text" id="url" value="https://n8n.srv1664158.hstgr.cloud/webhook/classify-transactions" spellcheck="false" />
-
-    <label>Input</label>
-    <div class="modes">
-      <button id="mFile" class="active" type="button">CSV file</button>
-      <button id="mSheet" type="button">Google Sheet</button>
-    </div>
-
-    <!-- FILE -->
-    <div class="pane show" id="paneFile">
-      <div class="drop" id="drop">
-        <strong>Drop a .csv here</strong>
-        <div class="hint">or click to browse</div>
-        <div class="file" id="fileName"></div>
-      </div>
-      <input type="file" id="file" accept=".csv,text/csv" hidden />
-      <button class="btn" id="goFile" disabled>Classify file</button>
-    </div>
-
-    <!-- SHEET -->
-    <div class="pane" id="paneSheet">
-      <label>Step A &mdash; connect Google</label>
-      <button class="gbtn" id="gConnect" type="button"><span class="dot"></span> Connect Google account</button>
-      <div class="gstate" id="gState">Not connected. The workflow acts with your permissions only.</div>
-
-      <label for="ssSelect">Step B &mdash; choose a spreadsheet</label>
-      <select id="ssSelect" disabled><option value="">Connect Google first</option></select>
-
-      <label for="tabSelect">Step C &mdash; choose a tab</label>
-      <select id="tabSelect" disabled><option value="">Pick a spreadsheet first</option></select>
-
-      <button class="btn" id="goPicked" disabled>Classify selected tab</button>
-
-      <div class="divider">or</div>
-      <label for="sheetUrl">Paste a sheet link</label>
-      <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=0" spellcheck="false" />
-      <button class="btn alt" id="goLink" disabled>Classify pasted link</button>
-
-      <div class="note" style="margin-top:16px;">A new tab <b>"Classified &lt;date&gt;"</b> is added to the chosen spreadsheet. You need edit access to it. Both options require connecting Google first.</div>
-    </div>
-
-    <div class="note">
-      For the pick flow the workflow must be <b>active</b> (this URL uses <b>/webhook/</b>). Test URLs only catch one request at a time.
-    </div>
-
-    <div id="status"></div>
+  <div class="seg">
+    <button id="mFile" class="active" type="button">CSV file</button>
+    <button id="mSheet" type="button">Google Sheet</button>
   </div>
 
-  <div class="card results" id="results">
-    <h2><span class="n">2</span> Results</h2>
-    <div class="summary" id="summary"></div>
+  <!-- FILE -->
+  <div class="pane show" id="paneFile">
+    <div class="drop" id="drop">
+      <strong>Drop a .csv here</strong>
+      <span>or click to browse</span>
+      <div class="file" id="fileName"></div>
+    </div>
+    <input type="file" id="file" accept=".csv,text/csv" hidden />
+    <button class="btn" id="goFile" disabled>Classify file</button>
+  </div>
+
+  <!-- SHEET -->
+  <div class="pane" id="paneSheet">
+    <button class="gbtn" id="gConnect" type="button"><span class="dot"></span> Connect Google</button>
+    <div class="gstate" id="gState">Acts with your permissions only.</div>
+
+    <label for="ssSelect">Spreadsheet</label>
+    <select id="ssSelect" disabled><option value="">Connect Google first</option></select>
+
+    <label for="tabSelect">Tab</label>
+    <select id="tabSelect" disabled><option value="">Pick a spreadsheet first</option></select>
+
+    <button class="btn" id="goPicked" disabled>Classify selected tab</button>
+
+    <div class="or">or</div>
+    <label for="sheetUrl">Paste a sheet link</label>
+    <input type="text" id="sheetUrl" placeholder="https://docs.google.com/spreadsheets/d/.../edit#gid=0" spellcheck="false" />
+    <button class="btn alt" id="goLink" disabled>Classify pasted link</button>
+  </div>
+
+  <div id="status"></div>
+
+  <!-- advanced -->
+  <div class="adv" id="adv">
+    <button class="adv-toggle" id="advToggle" type="button"><span class="car">›</span> Endpoint settings</button>
+    <div class="adv-body">
+      <label for="url">Webhook URL</label>
+      <input type="text" id="url" value="https://n8n.srv1664158.hstgr.cloud/webhook/classify-transactions" spellcheck="false" />
+    </div>
+  </div>
+
+  <div class="results" id="results">
+    <div class="counts" id="counts"></div>
     <div class="tablewrap"><table id="table"></table></div>
-    <a class="dl" id="download" download="classified_transactions.csv">&darr; Download classified CSV</a>
+    <a class="dl" id="download" download="classified_transactions.csv">Download CSV</a>
   </div>
 
-  <footer>Runs in your browser &middot; your Google token only goes to your own n8n webhooks</footer>
+  <footer>Runs in your browser. Your Google token only goes to your own n8n webhooks.</footer>
 </div>
 
 <script>
-  /* ====== CONFIG ====== */
   const GOOGLE_CLIENT_ID = '895572489046-jod47u58om8gepov3npeq1vftkabifgl.apps.googleusercontent.com';
   const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.metadata.readonly';
-  /* ==================== */
 
   const $ = id => document.getElementById(id);
   const urlEl=$('url'), fileEl=$('file'), drop=$('drop'), fileName=$('fileName'),
         ssSelect=$('ssSelect'), tabSelect=$('tabSelect'), sheetUrlEl=$('sheetUrl'),
         goFile=$('goFile'), goPicked=$('goPicked'), goLink=$('goLink'),
-        statusEl=$('status'), results=$('results'),
-        summary=$('summary'), table=$('table'), download=$('download'),
+        statusEl=$('status'), results=$('results'), counts=$('counts'), table=$('table'), download=$('download'),
         mFile=$('mFile'), mSheet=$('mSheet'), paneFile=$('paneFile'), paneSheet=$('paneSheet'),
-        gConnect=$('gConnect'), gState=$('gState');
+        gConnect=$('gConnect'), gState=$('gState'), adv=$('adv'), advToggle=$('advToggle');
 
   let mode='file', chosen=null, accessToken=null, tokenClient=null, busy=false;
 
-  function status(html, cls){ statusEl.className=cls||''; statusEl.innerHTML=html; }
+  function status(html){ statusEl.innerHTML=html||''; }
   function siblingUrl(path){ const u=urlEl.value.trim(); const i=u.lastIndexOf('/'); return i>=0 ? u.slice(0,i+1)+path : u; }
-
   function refresh(){
     goFile.disabled   = busy || !chosen;
     goPicked.disabled = busy || !(accessToken && ssSelect.value && tabSelect.value);
@@ -190,16 +189,31 @@
   }
   mFile.onclick=()=>setMode('file');
   mSheet.onclick=()=>setMode('sheet');
+  advToggle.onclick=()=>adv.classList.toggle('open');
   sheetUrlEl.addEventListener('input', refresh);
   ssSelect.addEventListener('change', () => { if(ssSelect.value) loadTabs(ssSelect.value); else resetTabs(); refresh(); });
   tabSelect.addEventListener('change', refresh);
 
+  /* ---- error handling ---- */
+  async function ok(res, kind){
+    if(res.ok) return true;
+    let body=''; try{ body=await res.text(); }catch(_){}
+    let msg;
+    if(res.status===500) msg='The workflow hit an error and stopped (HTTP 500). A step failed before finishing'+(kind==='sheet'?' — nothing was written to your sheet':'')+'. Check the latest execution in n8n for the failing node.'+(body?'\n\n'+body.slice(0,300):'');
+    else if(res.status===404) msg='No webhook is listening (HTTP 404). Make sure the workflow is published / active.';
+    else if(res.status===401||res.status===403) msg='Google rejected the request (HTTP '+res.status+'). Reconnect, or check that you can edit that sheet.';
+    else msg='Request failed (HTTP '+res.status+').'+(body?'\n\n'+body.slice(0,300):'');
+    status('<div class="err">'+esc(msg)+'</div>');
+    return false;
+  }
+  function netError(){
+    status('<div class="err">Couldn\u2019t reach the workflow, or it errored before responding.\n\nWhen a step fails, n8n returns a 500 that a browser can\u2019t always read across origins, so it surfaces here as a connection error. Open the execution log in n8n to see which node failed.</div>');
+  }
+
   /* ---- Google sign-in ---- */
   function initToken(){
     if(tokenClient) return true;
-    if(!window.google || !google.accounts || !google.accounts.oauth2){
-      status('<div class="err">Google library not loaded yet. Wait a second and retry.</div>'); return false;
-    }
+    if(!window.google || !google.accounts || !google.accounts.oauth2){ status('<div class="err">Google library not loaded yet. Wait a second and retry.</div>'); return false; }
     tokenClient = google.accounts.oauth2.initTokenClient({
       client_id: GOOGLE_CLIENT_ID, scope: GOOGLE_SCOPE,
       callback: (resp) => {
@@ -207,41 +221,35 @@
           accessToken = resp.access_token;
           gConnect.classList.add('connected');
           gConnect.childNodes[1].nodeValue = ' Google connected';
-          gState.innerHTML = 'Connected. <b>Sheets + Drive access granted</b> for this session.';
+          gState.textContent = 'Connected for this session.';
           loadSpreadsheets(); refresh();
-        } else { gState.textContent = 'Sign-in did not return a token. Try again.'; }
+        } else { gState.textContent = 'Sign-in failed. Try again.'; }
       }
     });
     return true;
   }
   gConnect.onclick = () => { if(!initToken()) return; tokenClient.requestAccessToken({ prompt: accessToken ? '' : 'consent' }); };
-
   function resetTabs(){ tabSelect.innerHTML='<option value="">Pick a spreadsheet first</option>'; tabSelect.disabled=true; }
 
   async function loadSpreadsheets(){
-    ssSelect.disabled=true; ssSelect.innerHTML='<option value="">Loading your spreadsheets…</option>'; resetTabs();
+    ssSelect.disabled=true; ssSelect.innerHTML='<option value="">Loading…</option>'; resetTabs();
     try{
       const res = await fetch(siblingUrl('list-spreadsheets'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ accessToken }) });
-      if(!res.ok){ await fail(res,'list-spreadsheets'); ssSelect.innerHTML='<option value="">Could not load — paste a link below</option>'; refresh(); return; }
-      const data = await res.json();
-      const items = (data && data.spreadsheets) || [];
-      if(!items.length){ ssSelect.innerHTML='<option value="">No spreadsheets found</option>'; refresh(); return; }
-      ssSelect.innerHTML = '<option value="">— select —</option>' + items.map(s => '<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>').join('');
-      ssSelect.disabled=false; status(''); refresh();
-    }catch(err){ status('<div class="err">Could not reach /list-spreadsheets.\n'+err.message+'</div>'); }
+      if(!(await ok(res,'list'))){ ssSelect.innerHTML='<option value="">Could not load — paste a link below</option>'; refresh(); return; }
+      const items = ((await res.json()).spreadsheets) || [];
+      ssSelect.innerHTML = items.length ? '<option value="">— select —</option>'+items.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>').join('') : '<option value="">No spreadsheets found</option>';
+      ssSelect.disabled = !items.length; status(''); refresh();
+    }catch(err){ netError(); }
   }
-
   async function loadTabs(spreadsheetId){
-    tabSelect.disabled=true; tabSelect.innerHTML='<option value="">Loading tabs…</option>'; refresh();
+    tabSelect.disabled=true; tabSelect.innerHTML='<option value="">Loading…</option>'; refresh();
     try{
       const res = await fetch(siblingUrl('list-tabs'), { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ spreadsheetId, accessToken }) });
-      if(!res.ok){ await fail(res,'list-tabs'); tabSelect.innerHTML='<option value="">Could not load tabs</option>'; refresh(); return; }
-      const data = await res.json();
-      const tabs = (data && data.tabs) || [];
-      if(!tabs.length){ tabSelect.innerHTML='<option value="">No tabs found</option>'; refresh(); return; }
-      tabSelect.innerHTML = '<option value="">— select —</option>' + tabs.map(t => '<option value="'+esc(String(t.gid))+'">'+esc(t.title)+'</option>').join('');
-      tabSelect.disabled=false; status(''); refresh();
-    }catch(err){ status('<div class="err">Could not reach /list-tabs.\n'+err.message+'</div>'); }
+      if(!(await ok(res,'list'))){ tabSelect.innerHTML='<option value="">Could not load tabs</option>'; refresh(); return; }
+      const tabs = ((await res.json()).tabs) || [];
+      tabSelect.innerHTML = tabs.length ? '<option value="">— select —</option>'+tabs.map(t=>'<option value="'+esc(String(t.gid))+'">'+esc(t.title)+'</option>').join('') : '<option value="">No tabs found</option>';
+      tabSelect.disabled = !tabs.length; status(''); refresh();
+    }catch(err){ netError(); }
   }
 
   /* ---- file picker ---- */
@@ -252,84 +260,65 @@
   ['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('over');}));
   drop.addEventListener('drop',e=>setFile(e.dataTransfer.files[0]));
 
-  function explain404(p){ return 'No webhook listening at /'+p+'. Activate (publish) the workflow — test URLs only catch one request.'; }
-  async function fail(res, p){
-    let extra=''; try{ extra=await res.text(); }catch(_){}
-    if(res.status===404) extra=explain404(p||'');
-    if(res.status===401||res.status===403) extra='Google rejected the token (401/403). Scope may be missing (reconnect), token expired, or no access to that sheet.\n\n'+extra;
-    status('<div class="err">Request to /'+(p||'')+' failed — HTTP '+res.status+'\n'+esc(extra)+'</div>');
-  }
-
-  /* ---- classify actions ---- */
+  /* ---- classify ---- */
   async function classifyFileFlow(){
-    if(!chosen) return;
-    busy=true; refresh(); results.style.display='none';
-    status('<span class="spin"></span> Sending file… this can take a little while.');
+    if(!chosen) return; busy=true; refresh(); results.style.display='none';
+    status('<div class="row"><span class="spin"></span> Classifying…</div>');
     try{
       const fd=new FormData(); fd.append('file', chosen, chosen.name);
       const res=await fetch(urlEl.value.trim(),{method:'POST',body:fd});
-      if(!res.ok){ await fail(res,'classify-transactions'); }
-      else{
+      if(await ok(res,'file')){
         const text=await (await res.blob()).text();
         download.href=URL.createObjectURL(new Blob([text],{type:'text/csv'}));
         render(text);
-        status('&check; Done — classified '+Math.max(0,parse(text).rows.length)+' transactions.');
+        status('Classified '+Math.max(0,parse(text).rows.length)+' transactions.');
         results.style.display='block';
       }
-    }catch(err){ status('<div class="err">Could not reach the webhook.\n'+err.message+'</div>'); }
+    }catch(err){ netError(); }
     busy=false; refresh();
   }
-
   async function classifySheetFlow(sheetUrl){
-    if(!sheetUrl || !accessToken) return;
-    busy=true; refresh(); results.style.display='none';
-    status('<span class="spin"></span> Reading, classifying and writing a new tab…');
+    if(!sheetUrl || !accessToken) return; busy=true; refresh(); results.style.display='none';
+    status('<div class="row"><span class="spin"></span> Reading, classifying, writing a new tab…</div>');
     try{
       const res=await fetch(urlEl.value.trim(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sheetUrl, accessToken})});
-      if(!res.ok){ await fail(res,'classify-transactions'); }
-      else{
-        const msg=(await res.text())||'Done. A new classified tab was added.';
-        status('');
-        document.querySelector('.tablewrap').style.display='none';
-        download.style.display='none'; table.innerHTML='';
-        summary.innerHTML='<div class="ok"><strong>Done.</strong><br>'+esc(msg)+'<br><br><a class="dl" style="margin-top:6px" href="'+esc(sheetUrl)+'" target="_blank" rel="noopener">Open the spreadsheet &rarr;</a></div>';
-        results.style.display='block';
+      if(await ok(res,'sheet')){
+        const msg=(await res.text())||'A new classified tab was added.';
+        document.querySelector('.tablewrap').style.display='none'; download.style.display='none'; table.innerHTML=''; counts.innerHTML='';
+        counts.innerHTML='<div class="ok">'+esc(msg)+'<br><br><a href="'+esc(sheetUrl)+'" target="_blank" rel="noopener">Open the spreadsheet →</a></div>';
+        status(''); results.style.display='block';
       }
-    }catch(err){ status('<div class="err">Could not reach the webhook.\n'+err.message+'</div>'); }
+    }catch(err){ netError(); }
     busy=false; refresh();
   }
-
   goFile.onclick = classifyFileFlow;
-  goPicked.onclick = () => {
-    if(!(ssSelect.value && tabSelect.value)) return;
-    classifySheetFlow('https://docs.google.com/spreadsheets/d/'+ssSelect.value+'/edit#gid='+tabSelect.value);
-  };
+  goPicked.onclick = () => { if(ssSelect.value && tabSelect.value) classifySheetFlow('https://docs.google.com/spreadsheets/d/'+ssSelect.value+'/edit#gid='+tabSelect.value); };
   goLink.onclick = () => classifySheetFlow(sheetUrlEl.value.trim());
 
-  /* ---- CSV parse + render ---- */
+  /* ---- CSV + render ---- */
   function parse(text){
     const lines=text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.length);
-    const pl=line=>{const out=[];let cur='',q=false;for(let i=0;i<line.length;i++){const c=line[i];
-      if(q){if(c==='"'&&line[i+1]==='"'){cur+='"';i++;}else if(c==='"'){q=false;}else cur+=c;}
-      else{if(c==='"')q=true;else if(c===','){out.push(cur);cur='';}else cur+=c;}}out.push(cur);return out;};
+    const pl=line=>{const o=[];let c='',q=false;for(let i=0;i<line.length;i++){const ch=line[i];
+      if(q){if(ch==='"'&&line[i+1]==='"'){c+='"';i++;}else if(ch==='"'){q=false;}else c+=ch;}
+      else{if(ch==='"')q=true;else if(ch===','){o.push(c);c='';}else c+=ch;}}o.push(c);return o;};
     if(!lines.length)return{header:[],rows:[]};
     return{header:pl(lines[0]),rows:lines.slice(1).map(pl)};
   }
   function render(text){
     const {header,rows}=parse(text);
-    const catIdx=header.findIndex(h=>h.trim().toLowerCase()==='category');
-    const counts={1:0,2:0,3:0};
-    if(catIdx>-1)rows.forEach(r=>{const c=(r[catIdx]||'').trim();if(counts[c]!==undefined)counts[c]++;});
-    const labels={1:'Cat 1 &middot; Cash / other',2:'Cat 2 &middot; Recurring',3:'Cat 3 &middot; Discretionary'};
+    const ci=header.findIndex(h=>h.trim().toLowerCase()==='category');
+    const cnt={1:0,2:0,3:0};
+    if(ci>-1)rows.forEach(r=>{const c=(r[ci]||'').trim();if(cnt[c]!==undefined)cnt[c]++;});
+    const lab={1:'Cash / other',2:'Recurring',3:'Discretionary'};
     document.querySelector('.tablewrap').style.display=''; download.style.display='';
-    summary.innerHTML=[1,2,3].map(c=>'<div class="stat c'+c+'"><div class="lab">'+labels[c]+'</div><div class="val">'+counts[c]+'</div></div>').join('');
-    let html='<thead><tr>'+header.map(h=>'<th>'+esc(h)+'</th>').join('')+'</tr></thead><tbody>';
-    html+=rows.map(r=>'<tr>'+r.map((cell,i)=>{
-      if(i===catIdx){const c=(cell||'').trim();return '<td><span class="chip c'+c+'">'+esc(cell)+'</span></td>';}
-      const isNum=/^-?\d[\d,]*\.?\d*$/.test((cell||'').trim());
-      return '<td class="'+(isNum?'amt':'')+'">'+esc(cell)+'</td>';
+    counts.innerHTML=[1,2,3].map(c=>'<div class="count c'+c+'"><div class="n">'+cnt[c]+'</div><div class="l">'+lab[c]+'</div></div>').join('');
+    let h='<thead><tr>'+header.map(x=>'<th>'+esc(x)+'</th>').join('')+'</tr></thead><tbody>';
+    h+=rows.map(r=>'<tr>'+r.map((cell,i)=>{
+      if(i===ci){const c=(cell||'').trim();return '<td><span class="chip c'+c+'">'+esc(cell)+'</span></td>';}
+      const num=/^-?\d[\d,]*\.?\d*$/.test((cell||'').trim());
+      return '<td class="'+(num?'amt':'')+'">'+esc(cell)+'</td>';
     }).join('')+'</tr>').join('');
-    table.innerHTML=html+'</tbody>';
+    table.innerHTML=h+'</tbody>';
   }
   function esc(s){return(s==null?'':String(s)).replace(/[&<>"]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[m]));}
 </script>
