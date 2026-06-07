@@ -443,11 +443,22 @@
     busy=true; refresh(); results.style.display='none';
     status('<div class="row"><span class="spin"></span> Reading, classifying, writing a new tab…</div>');
 
+    const urlString = sheetUrl;
+    const url = new URL(urlString);
+    const pathParts = url.pathname.split('/');
+    const spreadsheetId = pathParts[pathParts.indexOf('d') + 1];
+    let gid = url.searchParams.get('gid'); 
+    if (!gid && url.hash) {
+        // Fallback if gid is only present in the URL hash fragment
+        const hashParams = new URLSearchParams(url.hash.replace('#', ''));
+        gid = hashParams.get('gid');
+    }
+
     try{
       const res=await fetch(urlEl.value.trim(),{
         method:'POST',
         headers:{'Content-Type':'application/json'},
-        body:JSON.stringify({sheetUrl, accessToken})
+        body:JSON.stringify({sheetUrl, accessToken, spreadsheetId, gid})
       });
 
       const body = await getRequiredSuccessBody(res, 'sheet');
