@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -195,19 +196,54 @@
   tabSelect.addEventListener('change', refresh);
 
   /* ---- error handling ---- */
+  async function readErrorBody(res){
+    const contentType = res.headers.get('content-type') || '';
+
+    try{
+      if(contentType.includes('application/json')){
+        const data = await res.json();
+        return data.message || data.error || data.description || JSON.stringify(data, null, 2);
+      }
+      return await res.text();
+    }catch(_){
+      return '';
+    }
+  }
+
   async function ok(res, kind){
     if(res.ok) return true;
-    let body=''; try{ body=await res.text(); }catch(_){}
-    let msg;
-    if(res.status===500) msg='The workflow hit an error and stopped (HTTP 500). A step failed before finishing'+(kind==='sheet'?' — nothing was written to your sheet':'')+'. Check the latest execution in n8n for the failing node.'+(body?'\n\n'+body.slice(0,300):'');
-    else if(res.status===404) msg='No webhook is listening (HTTP 404). Make sure the workflow is published / active.';
-    else if(res.status===401||res.status===403) msg='Google rejected the request (HTTP '+res.status+'). Reconnect, or check that you can edit that sheet.';
-    else msg='Request failed (HTTP '+res.status+').'+(body?'\n\n'+body.slice(0,300):'');
+
+    const body = (await readErrorBody(res)).trim();
+    let msg = 'Failed to complete the request.\n\nHTTP '+res.status+' '+(res.statusText || 'Error');
+
+    if(res.status===500){
+      msg = 'The workflow failed while processing the request.\n\nHTTP 500 Internal Server Error';
+      if(kind==='sheet') msg += '\nNothing was written to your sheet.';
+      msg += '\n\nOpen the latest n8n execution and check the failing node.';
+    }
+    else if(res.status===404){
+      msg = 'No webhook is listening.\n\nHTTP 404 Not Found\nMake sure the n8n workflow is active and the webhook URL is correct.';
+    }
+    else if(res.status===401 || res.status===403){
+      msg = 'Google rejected the request.\n\nHTTP '+res.status+'\nReconnect Google, then check that you have access to the spreadsheet.';
+    }
+    else if(res.status===400){
+      msg = 'The workflow rejected the request.\n\nHTTP 400 Bad Request\nCheck that the file or sheet format matches what the workflow expects.';
+    }
+
+    if(body){
+      msg += '\n\nResponse from server:\n' + body.slice(0, 600);
+    }
+
     status('<div class="err">'+esc(msg)+'</div>');
+    results.style.display='none';
     return false;
   }
-  function netError(){
-    status('<div class="err">Couldn\u2019t reach the workflow, or it errored before responding.\n\nWhen a step fails, n8n returns a 500 that a browser can\u2019t always read across origins, so it surfaces here as a connection error. Open the execution log in n8n to see which node failed.</div>');
+
+  function netError(err){
+    const detail = err && err.message ? '\n\nBrowser error:\n' + err.message : '';
+    status('<div class="err">'+esc('Could not reach the workflow.\n\nThis is usually a network issue, CORS issue, wrong URL, or the n8n webhook crashed before returning a readable response.' + detail)+'</div>');
+    results.style.display='none';
   }
 
   /* ---- Google sign-in ---- */
@@ -239,7 +275,7 @@
       const items = ((await res.json()).spreadsheets) || [];
       ssSelect.innerHTML = items.length ? '<option value="">— select —</option>'+items.map(s=>'<option value="'+esc(s.id)+'">'+esc(s.name)+'</option>').join('') : '<option value="">No spreadsheets found</option>';
       ssSelect.disabled = !items.length; status(''); refresh();
-    }catch(err){ netError(); }
+    }catch(err){ netError(err); }
   }
   async function loadTabs(spreadsheetId){
     tabSelect.disabled=true; tabSelect.innerHTML='<option value="">Loading…</option>'; refresh();
@@ -249,7 +285,7 @@
       const tabs = ((await res.json()).tabs) || [];
       tabSelect.innerHTML = tabs.length ? '<option value="">— select —</option>'+tabs.map(t=>'<option value="'+esc(String(t.gid))+'">'+esc(t.title)+'</option>').join('') : '<option value="">No tabs found</option>';
       tabSelect.disabled = !tabs.length; status(''); refresh();
-    }catch(err){ netError(); }
+    }catch(err){ netError(err); }
   }
 
   /* ---- file picker ---- */
@@ -262,34 +298,60 @@
 
   /* ---- classify ---- */
   async function classifyFileFlow(){
-    if(!chosen) return; busy=true; refresh(); results.style.display='none';
+    if(!chosen) return;
+    busy=true; refresh(); results.style.display='none';
     status('<div class="row"><span class="spin"></span> Classifying…</div>');
+
     try{
-      const fd=new FormData(); fd.append('file', chosen, chosen.name);
+      const fd=new FormData();
+      fd.append('file', chosen, chosen.name);
+
       const res=await fetch(urlEl.value.trim(),{method:'POST',body:fd});
-      if(await ok(res,'file')){
-        const text=await (await res.blob()).text();
-        download.href=URL.createObjectURL(new Blob([text],{type:'text/csv'}));
-        render(text);
-        status('Classified '+Math.max(0,parse(text).rows.length)+' transactions.');
-        results.style.display='block';
+      if(!(await ok(res,'file'))) return;
+
+      const text=await res.text();
+      if(!text.trim()){
+        status('<div class="err">'+esc('The workflow succeeded, but returned an empty response. Expected a CSV file.')+'</div>');
+        return;
       }
-    }catch(err){ netError(); }
-    busy=false; refresh();
+
+      download.href=URL.createObjectURL(new Blob([text],{type:'text/csv'}));
+      render(text);
+      status('Classified '+Math.max(0,parse(text).rows.length)+' transactions.');
+      results.style.display='block';
+    }catch(err){
+      netError(err);
+    }finally{
+      busy=false; refresh();
+    }
   }
+
   async function classifySheetFlow(sheetUrl){
-    if(!sheetUrl || !accessToken) return; busy=true; refresh(); results.style.display='none';
+    if(!sheetUrl || !accessToken) return;
+    busy=true; refresh(); results.style.display='none';
     status('<div class="row"><span class="spin"></span> Reading, classifying, writing a new tab…</div>');
+
     try{
-      const res=await fetch(urlEl.value.trim(),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({sheetUrl, accessToken})});
-      if(await ok(res,'sheet')){
-        const msg=(await res.text())||'A new classified tab was added.';
-        document.querySelector('.tablewrap').style.display='none'; download.style.display='none'; table.innerHTML=''; counts.innerHTML='';
-        counts.innerHTML='<div class="ok">'+esc(msg)+'<br><br><a href="'+esc(sheetUrl)+'" target="_blank" rel="noopener">Open the spreadsheet →</a></div>';
-        status(''); results.style.display='block';
-      }
-    }catch(err){ netError(); }
-    busy=false; refresh();
+      const res=await fetch(urlEl.value.trim(),{
+        method:'POST',
+        headers:{'Content-Type':'application/json'},
+        body:JSON.stringify({sheetUrl, accessToken})
+      });
+
+      if(!(await ok(res,'sheet'))) return;
+
+      const msg=(await res.text())||'A new classified tab was added.';
+      document.querySelector('.tablewrap').style.display='none';
+      download.style.display='none';
+      table.innerHTML='';
+      counts.innerHTML='<div class="ok">'+esc(msg)+'<br><br><a href="'+esc(sheetUrl)+'" target="_blank" rel="noopener">Open the spreadsheet →</a></div>';
+      status('');
+      results.style.display='block';
+    }catch(err){
+      netError(err);
+    }finally{
+      busy=false; refresh();
+    }
   }
   goFile.onclick = classifyFileFlow;
   goPicked.onclick = () => { if(ssSelect.value && tabSelect.value) classifySheetFlow('https://docs.google.com/spreadsheets/d/'+ssSelect.value+'/edit#gid='+tabSelect.value); };
