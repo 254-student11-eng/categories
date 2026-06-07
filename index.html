@@ -155,12 +155,14 @@
     <a class="dl" id="download" download="classified_transactions.csv">Download CSV</a>
   </div>
 
-  <footer>Runs in your browser. Your Google token only goes to your own n8n webhooks.</footer>
+  <footer>Runs in your browser. Your Google token only goes to your own n8n webhooks.<br>Version: <code>strict-empty-body-v5-verified</code></footer>
 </div>
 
 <script>
   const GOOGLE_CLIENT_ID = '895572489046-jod47u58om8gepov3npeq1vftkabifgl.apps.googleusercontent.com';
   const GOOGLE_SCOPE = 'https://www.googleapis.com/auth/spreadsheets https://www.googleapis.com/auth/drive.metadata.readonly';
+  const APP_VERSION = 'strict-empty-body-v5-verified';
+  console.log('[Transaction Classifier] loaded version:', APP_VERSION);
 
   const $ = id => document.getElementById(id);
   const urlEl=$('url'), fileEl=$('file'), drop=$('drop'), fileName=$('fileName'),
@@ -209,10 +211,35 @@
     }
   }
 
-  async function ok(res, kind){
-    if(res.ok) return true;
+  function showResponseError(msg){
+    status('<div class="err">'+esc(msg)+'</div>');
+    results.style.display='none';
+  }
 
-    const body = (await readErrorBody(res)).trim();
+  async function readResponseText(res, kind){
+    let body = '';
+    try{
+      body = await res.text();
+    }catch(err){
+      console.error('[Transaction Classifier] Failed to read response body', { kind, error: err });
+      body = '';
+    }
+
+    console.log('[Transaction Classifier] Full webhook response', {
+      kind,
+      ok: res.ok,
+      status: res.status,
+      statusText: res.statusText,
+      contentType: res.headers.get('content-type'),
+      contentLength: res.headers.get('content-length'),
+      bodyLength: body.length,
+      body
+    });
+
+    return body;
+  }
+
+  function formatHttpError(res, body, kind){
     let msg = 'Failed to complete the request.\n\nHTTP '+res.status+' '+(res.statusText || 'Error');
 
     if(res.status===500){
@@ -230,18 +257,108 @@
       msg = 'The workflow rejected the request.\n\nHTTP 400 Bad Request\nCheck that the file or sheet format matches what the workflow expects.';
     }
 
-    if(body){
-      msg += '\n\nResponse from server:\n' + body.slice(0, 600);
+    if(body && body.trim()){
+      msg += '\n\nResponse from server:\n' + body.trim().slice(0, 600);
     }
 
-    status('<div class="err">'+esc(msg)+'</div>');
-    results.style.display='none';
+    return msg;
+  }
+
+  function formatEmptyBodyError(kind){
+    const expected = kind === 'file'
+      ? 'Expected the webhook to return a CSV body.'
+      : 'Expected the webhook to return a success message after writing the new tab.';
+
+    return 'Failed to complete the request.\n\nHTTP 200 OK, but the response body was empty.\n' + expected + '\n\nIn n8n, make sure the Respond to Webhook node returns real body data.';
+  }
+
+  async function ok(res, kind){
+    if(res.ok) return true;
+    const body = await readResponseText(res, kind);
+    showResponseError(formatHttpError(res, body, kind));
     return false;
   }
 
-  function netError(err){
-    const detail = err && err.message ? '\n\nBrowser error:\n' + err.message : '';
-    status('<div class="err">'+esc('Could not reach the workflow.\n\nThis is usually a network issue, CORS issue, wrong URL, or the n8n webhook crashed before returning a readable response.' + detail)+'</div>');
+  async function getRequiredSuccessBody(res, kind){
+    const body = await readResponseText(res, kind);
+
+    // HTTP errors and empty success bodies go through the same visible error path.
+    if(!res.ok){
+      showResponseError(formatHttpError(res, body, kind));
+      return null;
+    }
+
+    if(!body || !body.trim()){
+      showResponseError(formatEmptyBodyError(kind));
+      return null;
+    }
+
+    const normalized = body.trim().toLowerCase();
+    if(normalized === '{}' || normalized === '[]' || normalized === 'null' || normalized === 'undefined'){
+      showResponseError(formatEmptyBodyError(kind));
+      return null;
+    }
+
+    return body.trim();
+  }
+
+  function validateCsvBody(body){
+    const parsed = parse(body);
+    const hasEnoughColumns = parsed.header.length >= 2;
+    const hasRows = parsed.rows.length > 0;
+
+    if(!hasEnoughColumns || !hasRows){
+      showResponseError('Failed to complete the request.\n\nHTTP 200 OK, but the response body was not a usable CSV.\nExpected CSV headers and at least one transaction row.');
+      return false;
+    }
+
+    return true;
+  }
+
+  function normalizeSheetMessage(body){
+    const trimmed = body.trim();
+
+    console.log('[Transaction Classifier] Sheet body before success check:', trimmed);
+
+    if(trimmed === 'A new classified tab was added.'){
+      showResponseError('Failed to complete the request.\n\nThe page received the old fallback success text instead of a real webhook response. This usually means you are running an older cached HTML file, or your n8n workflow is returning that exact text.');
+      return null;
+    }
+
+    if(trimmed.startsWith('{') || trimmed.startsWith('[')){
+      let data;
+      try{
+        data = JSON.parse(trimmed);
+      }catch(_){
+        showResponseError('Failed to complete the request.\n\nHTTP 200 OK, but the response body was invalid JSON.');
+        return null;
+      }
+
+      const message = data && (data.message || data.msg || data.text || data.statusMessage);
+      const failed = data && (data.success === false || data.ok === false || data.status === 'error');
+
+      if(failed){
+        showResponseError('Failed to complete the request.\n\nThe workflow returned a failure response.\n\nResponse from server:\n' + trimmed.slice(0, 600));
+        return null;
+      }
+
+      if(!message || !String(message).trim()){
+        showResponseError(formatEmptyBodyError('sheet'));
+        return null;
+      }
+
+      return String(message).trim();
+    }
+
+    return trimmed;
+  }
+
+  function bodyError(expected){
+    const msg = expected === 'csv'
+      ? 'The workflow returned success, but the response body was empty or was not a valid CSV. Expected a CSV with headers and at least one transaction row.'
+      : 'The workflow returned success, but the response body was empty or did not include a real success message. Expected text, or JSON with a real message field.';
+
+    status('<div class="err">'+esc(msg)+'</div>');
     results.style.display='none';
   }
 
@@ -306,13 +423,9 @@
       fd.append('file', chosen, chosen.name);
 
       const res=await fetch(urlEl.value.trim(),{method:'POST',body:fd});
-      if(!(await ok(res,'file'))) return;
-
-      const text=await res.text();
-      if(!text.trim()){
-        status('<div class="err">'+esc('The workflow succeeded, but returned an empty response. Expected a CSV file.')+'</div>');
-        return;
-      }
+      const text = await getRequiredSuccessBody(res, 'file');
+      if(text === null) return;
+      if(!validateCsvBody(text)) return;
 
       download.href=URL.createObjectURL(new Blob([text],{type:'text/csv'}));
       render(text);
@@ -337,9 +450,12 @@
         body:JSON.stringify({sheetUrl, accessToken})
       });
 
-      if(!(await ok(res,'sheet'))) return;
+      const body = await getRequiredSuccessBody(res, 'sheet');
+      if(body === null) return;
 
-      const msg=(await res.text())||'A new classified tab was added.';
+      const msg = normalizeSheetMessage(body);
+      if(msg === null) return;
+
       document.querySelector('.tablewrap').style.display='none';
       download.style.display='none';
       table.innerHTML='';
